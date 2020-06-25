@@ -1,0 +1,12 @@
+[package]
+name = "collisions-disallowed"
+description = "Cool trajectory finder, rewritten in Rust from johnBuffer/NoCol."
+version = "0.1.0"
+authors = ["Armin Ghofrani"]
+repository = "https://github.com/arminghofrani/collisions-disallowed"
+
+edition = "2018"
+license = "MIT"
+readme = "README.md"
+
+[dependencies]
