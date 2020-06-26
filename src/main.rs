@@ -3,6 +3,7 @@ use ggez::{
     event::{self, EventHandler},
     *,
 };
+use rand::Rng;
 
 fn main() {
     let window_setup = WindowSetup {
@@ -49,10 +50,11 @@ impl Game {
         let mut initial_circle_positions: [mint::Point2<f32>; 50] =
             [mint::Point2 { x: 0.0, y: 0.0 }; 50];
 
+        let mut rng = rand::thread_rng();
         for i in 0..50 {
             initial_circle_positions[i] = mint::Point2 {
-                x: rand::random::<f32>() * 1200.0,
-                y: rand::random::<f32>() * 900.0,
+                x: rng.gen::<f32>() * 1200.0,
+                y: rng.gen::<f32>() * 900.0,
             };
         }
 
@@ -64,6 +66,11 @@ impl Game {
 
 impl EventHandler for Game {
     fn update(&mut self, _ctx: &mut Context) -> GameResult<()> {
+        for i in 0..50 {
+            self.circle_positions[i].x += 1.0;
+            self.circle_positions[i].y += 1.0;
+        }
+
         Ok(())
     }
 
@@ -80,8 +87,6 @@ impl EventHandler for Game {
                 0.1,
                 graphics::BLACK,
             );
-            self.circle_positions[i].x += 1.0;
-            self.circle_positions[i].y += 1.0;
         }
         let mesh = mesh_builder.build(ctx)?;
 
