@@ -5,6 +5,9 @@ use ggez::{
 };
 use rand::Rng;
 
+const WINDOW_WIDTH: f32 = 1200.0;
+const WINDOW_HEIGHT: f32 = 900.0;
+
 fn main() {
     let window_setup = WindowSetup {
         title: "collisions-disallowed".to_owned(),
@@ -15,8 +18,8 @@ fn main() {
     };
 
     let window_mode = WindowMode {
-        width: 1200.0,
-        height: 900.0,
+        width: WINDOW_WIDTH,
+        height: WINDOW_HEIGHT,
         maximized: false,
         fullscreen_type: FullscreenType::Windowed,
         borderless: false,
@@ -42,35 +45,44 @@ fn main() {
 }
 
 struct Game {
-    circle_positions: [mint::Point2<f32>; 50],
+    positions: [mint::Point2<f32>; 50],
+    velocities: [(f32, f32); 50],
 }
 
 impl Game {
     pub fn new(_ctx: &mut Context) -> Game {
-        let mut initial_circle_positions: [mint::Point2<f32>; 50] =
-            [mint::Point2 { x: 0.0, y: 0.0 }; 50];
-
         let mut rng = rand::thread_rng();
+
+        let mut init_positions: [mint::Point2<f32>; 50] = [mint::Point2 { x: 0.0, y: 0.0 }; 50];
+        let mut init_velocities: [(f32, f32); 50] = [(0.0, 0.0); 50];
+
         for i in 0..50 {
-            initial_circle_positions[i] = mint::Point2 {
-                x: rng.gen::<f32>() * 1200.0,
-                y: rng.gen::<f32>() * 900.0,
+            let angle = rng.gen::<f32>() * 2.0 * std::f32::consts::PI;
+            let radius = WINDOW_HEIGHT * 0.5;
+
+            let init_x = radius * angle.cos();
+            let init_y = radius * angle.sin();
+
+            let velocity = (if rng.gen::<i32>() % 2 == 0 { 1.0 } else { -1.0 })
+                * ((rng.gen::<i32>() % 20 + 150) as f32);
+
+            init_positions[i] = mint::Point2 {
+                x: init_x + WINDOW_WIDTH * 0.5,
+                y: init_y + WINDOW_HEIGHT * 0.5,
             };
+
+            init_velocities[i] = (-1.0 * angle.sin() * velocity, angle.cos() * velocity);
         }
 
         Game {
-            circle_positions: initial_circle_positions,
+            positions: init_positions,
+            velocities: init_velocities,
         }
     }
 }
 
 impl EventHandler for Game {
     fn update(&mut self, _ctx: &mut Context) -> GameResult<()> {
-        for i in 0..50 {
-            self.circle_positions[i].x += 1.0;
-            self.circle_positions[i].y += 1.0;
-        }
-
         Ok(())
     }
 
@@ -82,7 +94,7 @@ impl EventHandler for Game {
         for i in 0..50 {
             mesh_builder.circle(
                 graphics::DrawMode::fill(),
-                self.circle_positions[i],
+                self.positions[i],
                 15.0,
                 0.1,
                 graphics::BLACK,
