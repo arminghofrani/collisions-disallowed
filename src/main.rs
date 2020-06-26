@@ -1,5 +1,5 @@
 use ggez::{
-    conf::{NumSamples, WindowSetup},
+    conf::{NumSamples, WindowSetup, WindowMode, FullscreenType},
     event::{self, EventHandler},
     *,
 };
@@ -13,8 +13,22 @@ fn main() {
         srgb: true,
     };
 
+    let window_mode = WindowMode {
+        width: 1200.0,
+        height: 900.0,
+        maximized: false,
+        fullscreen_type: FullscreenType::Windowed,
+        borderless: false,
+        min_width: 0.0,
+        max_width: 0.0,
+        min_height: 0.0,
+        max_height: 0.0,
+        resizable: false,
+    };
+
     let (mut ctx, mut event_loop) = ContextBuilder::new("collisions-disallowed", "Armin Ghofrani")
         .window_setup(window_setup)
+        .window_mode(window_mode)
         .build()
         .expect("Could not create ggez context!");
 
@@ -55,7 +69,7 @@ impl EventHandler for Game {
                         x: self.x * (x as f32),
                         y: self.y * (y as f32),
                     },
-                    10.0,
+                    15.0,
                     0.1,
                     graphics::BLACK,
                 );
