@@ -11,3 +11,4 @@ readme = "README.md"
 
 [dependencies]
 ggez = "0.5"
+rand = "0.7.3"

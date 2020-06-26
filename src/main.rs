@@ -1,5 +1,5 @@
 use ggez::{
-    conf::{NumSamples, WindowSetup, WindowMode, FullscreenType},
+    conf::{FullscreenType, NumSamples, WindowMode, WindowSetup},
     event::{self, EventHandler},
     *,
 };
@@ -26,7 +26,7 @@ fn main() {
         resizable: false,
     };
 
-    let (mut ctx, mut event_loop) = ContextBuilder::new("collisions-disallowed", "Armin Ghofrani")
+    let (mut ctx, mut event_loop) = ContextBuilder::new("collisions-disallowed", "arminghofrani")
         .window_setup(window_setup)
         .window_mode(window_mode)
         .build()
@@ -41,13 +41,24 @@ fn main() {
 }
 
 struct Game {
-    x: f32,
-    y: f32,
+    circle_positions: [mint::Point2<f32>; 50],
 }
 
 impl Game {
     pub fn new(_ctx: &mut Context) -> Game {
-        Game { x: 0.0, y: 0.0 }
+        let mut initial_circle_positions: [mint::Point2<f32>; 50] =
+            [mint::Point2 { x: 0.0, y: 0.0 }; 50];
+
+        for i in 0..50 {
+            initial_circle_positions[i] = mint::Point2 {
+                x: rand::random::<f32>() * 1200.0,
+                y: rand::random::<f32>() * 900.0,
+            };
+        }
+
+        Game {
+            circle_positions: initial_circle_positions,
+        }
     }
 }
 
@@ -61,27 +72,20 @@ impl EventHandler for Game {
         let fps_display = graphics::Text::new(format!("FPS: {}", fps));
 
         let mut mesh_builder = graphics::MeshBuilder::new();
-        for x in 0..10 {
-            for y in 0..10 {
-                mesh_builder.circle(
-                    graphics::DrawMode::fill(),
-                    mint::Point2 {
-                        x: self.x * (x as f32),
-                        y: self.y * (y as f32),
-                    },
-                    15.0,
-                    0.1,
-                    graphics::BLACK,
-                );
-            }
+        for i in 0..50 {
+            mesh_builder.circle(
+                graphics::DrawMode::fill(),
+                self.circle_positions[i],
+                15.0,
+                0.1,
+                graphics::BLACK,
+            );
+            self.circle_positions[i].x += 1.0;
+            self.circle_positions[i].y += 1.0;
         }
         let mesh = mesh_builder.build(ctx)?;
 
-        self.x += 1.0;
-        self.y += 1.0;
-
         graphics::clear(ctx, graphics::WHITE);
-
         graphics::draw(
             ctx,
             &mesh,
@@ -92,7 +96,6 @@ impl EventHandler for Game {
             &fps_display,
             (mint::Point2 { x: 0.0, y: 0.0 }, graphics::BLACK),
         )?;
-
         graphics::present(ctx)
     }
 }
