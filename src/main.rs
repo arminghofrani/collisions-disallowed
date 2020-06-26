@@ -46,28 +46,35 @@ impl EventHandler for Game {
         let fps = timer::fps(ctx);
         let fps_display = graphics::Text::new(format!("FPS: {}", fps));
 
-        let circle = graphics::Mesh::new_circle(
-            ctx,
-            graphics::DrawMode::fill(),
-            mint::Point2 {
-                x: self.x,
-                y: self.y,
-            },
-            100.0,
-            0.1,
-            graphics::BLACK,
-        )?;
+        let mesh = graphics::MeshBuilder::new()
+            .circle(
+                graphics::DrawMode::fill(),
+                mint::Point2 {
+                    x: self.x,
+                    y: self.y,
+                },
+                50.0,
+                0.1,
+                graphics::BLACK,
+            )
+            .build(ctx)?;
 
         self.x += 1.0;
         self.y += 1.0;
 
         graphics::clear(ctx, graphics::WHITE);
-        graphics::draw(ctx, &circle, graphics::DrawParam::default())?;
+
+        graphics::draw(
+            ctx,
+            &mesh,
+            (mint::Point2 { x: 0.0, y: 0.0 }, graphics::BLACK),
+        )?;
         graphics::draw(
             ctx,
             &fps_display,
             (mint::Point2 { x: 0.0, y: 0.0 }, graphics::BLACK),
         )?;
+
         graphics::present(ctx)
     }
 }
