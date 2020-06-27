@@ -12,8 +12,17 @@ const WINDOW_WIDTH: f32 = 1200.0;
 const WINDOW_HEIGHT: f32 = 900.0;
 
 fn main() {
-    println!("Number of circles:");
-    let n_circles: usize = read!();
+    let mut n_circles: i32 = 0;
+    while n_circles < 1 {
+        println!("Number of circles (at least 1):");
+        n_circles = read!();
+    }
+
+    let mut max_radius: i32 = 0;
+    while max_radius < 5 {
+        println!("Maximum circle radius in pixels (at least 5):");
+        max_radius = read!();
+    }
 
     let window_setup = WindowSetup {
         title: "collisions-disallowed".to_owned(),
@@ -42,7 +51,7 @@ fn main() {
         .build()
         .expect("Could not create ggez context");
 
-    let mut game = Game::new(&mut ctx, n_circles);
+    let mut game = Game::new(&mut ctx, n_circles as usize, max_radius);
 
     match event::run(&mut ctx, &mut event_loop, &mut game) {
         Ok(_) => println!("Exited cleanly."),
@@ -53,16 +62,18 @@ fn main() {
 struct Game {
     positions: Vec<mint::Point2<f32>>,
     velocities: Vec<mint::Vector2<f32>>,
+    radii: Vec<f32>,
 }
 
 impl Game {
-    pub fn new(_ctx: &mut Context, n_circles: usize) -> Game {
+    pub fn new(_ctx: &mut Context, n_circles: usize, max_radius: i32) -> Game {
         let mut rng = rand::thread_rng();
 
         let mut init_positions: Vec<mint::Point2<f32>> =
             vec![mint::Point2 { x: 0.0, y: 0.0 }; n_circles];
         let mut init_velocities: Vec<mint::Vector2<f32>> =
             vec![mint::Vector2 { x: 0.0, y: 0.0 }; n_circles];
+        let mut radii: Vec<f32> = vec![0.0; n_circles];
 
         for i in 0..n_circles {
             let angle = rng.gen::<f32>() * 2.0 * std::f32::consts::PI;
@@ -78,16 +89,17 @@ impl Game {
                 x: init_x + WINDOW_WIDTH * 0.5,
                 y: init_y + WINDOW_HEIGHT * 0.5,
             };
-
             init_velocities[i] = mint::Vector2 {
                 x: -1.0 * angle.sin() * velocity,
                 y: angle.cos() * velocity,
             };
+            radii[i] = rng.gen::<f32>() * (max_radius as f32 - 5.0) + 5.0;
         }
 
         Game {
             positions: init_positions,
             velocities: init_velocities,
+            radii: radii,
         }
     }
 }
@@ -110,7 +122,7 @@ impl EventHandler for Game {
             for j in (i + 1)..self.positions.len() {
                 let to_collider_dist = dist_points(self.positions[i], self.positions[j]);
 
-                let min_dist = 40.0;
+                let min_dist = self.radii[i] + self.radii[j];
                 if to_collider_dist < min_dist {
                     let collision = scale_vector(
                         subtract_points(self.positions[i], self.positions[j]),
@@ -132,10 +144,7 @@ impl EventHandler for Game {
         for i in 0..self.positions.len() {
             self.positions[i] = add_to_point(
                 self.positions[i],
-                scale_vector(
-                    self.velocities[i],
-                    timer::delta(ctx).as_secs_f32(),
-                ),
+                scale_vector(self.velocities[i], timer::delta(ctx).as_secs_f32()),
             );
         }
 
@@ -151,14 +160,14 @@ impl EventHandler for Game {
             mesh_builder.circle(
                 graphics::DrawMode::fill(),
                 self.positions[i],
-                20.0,
+                self.radii[i],
                 0.1,
                 graphics::WHITE,
             );
             mesh_builder.circle(
                 graphics::DrawMode::stroke(2.0),
                 self.positions[i],
-                20.0,
+                self.radii[i],
                 0.1,
                 graphics::Color::new(0.0, 0.0, 1.0, 1.0),
             );
