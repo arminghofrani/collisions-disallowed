@@ -14,20 +14,26 @@ const WINDOW_HEIGHT: f32 = 900.0;
 fn main() {
     let mut n_circles: i32 = 0;
     while n_circles < 1 {
-        println!("Number of circles (at least 1):");
+        println!("Number of circles (>=1, try 25):");
         n_circles = read!();
     }
 
     let mut max_radius: i32 = 0;
     while max_radius < 5 {
-        println!("Maximum circle radius in pixels (at least 5):");
+        println!("Maximum circle radius in pixels (>=5, try 40):");
         max_radius = read!();
     }
 
     let mut max_velocity: i32 = 0;
     while max_velocity < 1 {
-        println!("Maximum velocity (at least 1):");
+        println!("Maximum velocity (>=1, try 250):");
         max_velocity = read!();
+    }
+
+    let mut attraction_factor: f32 = -1.0;
+    while attraction_factor < 0.0 {
+        println!("Attraction factor to center (>=0, try 0.05):");
+        attraction_factor = read!();
     }
 
     let window_setup = WindowSetup {
@@ -62,6 +68,7 @@ fn main() {
         n_circles as usize,
         max_radius as f32,
         max_velocity as f32,
+        attraction_factor,
     );
 
     match event::run(&mut ctx, &mut event_loop, &mut game) {
@@ -78,10 +85,17 @@ struct Game {
     stables: Vec<bool>,
     n_stables: u32,
     stable: bool,
+    attraction_factor: f32,
 }
 
 impl Game {
-    pub fn new(_ctx: &mut Context, n_circles: usize, max_radius: f32, max_velocity: f32) -> Game {
+    pub fn new(
+        _ctx: &mut Context,
+        n_circles: usize,
+        max_radius: f32,
+        max_velocity: f32,
+        attraction_factor: f32,
+    ) -> Game {
         let mut rng = rand::thread_rng();
 
         let mut init_positions: Vec<mint::Point2<f32>> =
@@ -116,13 +130,13 @@ impl Game {
             stables: stables,
             n_stables: 0,
             stable: false,
+            attraction_factor: attraction_factor,
         }
     }
 }
 
 impl EventHandler for Game {
     fn update(&mut self, ctx: &mut Context) -> GameResult<()> {
-        let attraction_force = 0.05;
         let center = mint::Point2 {
             x: WINDOW_WIDTH * 0.5,
             y: WINDOW_HEIGHT * 0.5,
@@ -133,7 +147,7 @@ impl EventHandler for Game {
             let to_center = subtract_points(center, self.positions[i]);
             self.velocities[i] = add_vector(
                 self.velocities[i],
-                scale_vector(to_center, attraction_force),
+                scale_vector(to_center, self.attraction_factor),
             );
 
             let mut clean = true;
