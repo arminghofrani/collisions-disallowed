@@ -63,6 +63,9 @@ struct Game {
     positions: Vec<mint::Point2<f32>>,
     velocities: Vec<mint::Vector2<f32>>,
     radii: Vec<f32>,
+    cleans: Vec<u32>,
+    stables: Vec<bool>,
+    stable: bool,
 }
 
 impl Game {
@@ -74,6 +77,8 @@ impl Game {
         let mut init_velocities: Vec<mint::Vector2<f32>> =
             vec![mint::Vector2 { x: 0.0, y: 0.0 }; n_circles];
         let mut radii: Vec<f32> = vec![0.0; n_circles];
+        let cleans: Vec<u32> = vec![0; n_circles];
+        let stables: Vec<bool> = vec![false; n_circles];
 
         for i in 0..n_circles {
             let angle = rng.gen::<f32>() * 2.0 * std::f32::consts::PI;
@@ -100,6 +105,9 @@ impl Game {
             positions: init_positions,
             velocities: init_velocities,
             radii: radii,
+            cleans: cleans,
+            stables: stables,
+            stable: false,
         }
     }
 }
@@ -112,6 +120,7 @@ impl EventHandler for Game {
             y: WINDOW_HEIGHT * 0.5,
         };
 
+        self.stable = true;
         for i in 0..self.positions.len() {
             let to_center = subtract_points(center, self.positions[i]);
             self.velocities[i] = add_vector(
@@ -119,6 +128,7 @@ impl EventHandler for Game {
                 scale_vector(to_center, attraction_force),
             );
 
+            let mut clean = true;
             for j in (i + 1)..self.positions.len() {
                 let to_collider_dist = dist_points(self.positions[i], self.positions[j]);
 
@@ -137,7 +147,27 @@ impl EventHandler for Game {
                         self.positions[j],
                         scale_vector(collision, -0.5 * (min_dist - to_collider_dist)),
                     );
+
+                    clean = false;
+                    self.stable = false;
+
+                    self.cleans[j] = 0;
+                    self.stables[j] = false;
                 }
+            }
+
+            if clean {
+                if !self.stables[i] {
+                    self.stable = false;
+                    self.cleans[i] += 1;
+
+                    if self.cleans[i] >= 600 {
+                        self.stables[i] = true;
+                    }
+                }
+            } else {
+                self.cleans[i] = 0;
+                self.stables[i] = false;
             }
         }
 
@@ -154,6 +184,7 @@ impl EventHandler for Game {
     fn draw(&mut self, ctx: &mut Context) -> GameResult<()> {
         let fps = timer::fps(ctx);
         let fps_display = graphics::Text::new(format!("FPS: {:.2}", fps));
+        let stable_display = graphics::Text::new("STABLE");
 
         let mut mesh_builder = graphics::MeshBuilder::new();
         for i in 0..self.positions.len() {
@@ -162,14 +193,18 @@ impl EventHandler for Game {
                 self.positions[i],
                 self.radii[i],
                 0.1,
-                graphics::WHITE,
+                if self.stables[i] {
+                    graphics::Color::new(0.0, 0.0, 1.0, 1.0)
+                } else {
+                    graphics::Color::new(1.0, 0.0, 0.0, 1.0)
+                },
             );
             mesh_builder.circle(
-                graphics::DrawMode::stroke(2.0),
+                graphics::DrawMode::stroke(3.0),
                 self.positions[i],
                 self.radii[i],
                 0.1,
-                graphics::Color::new(0.0, 0.0, 1.0, 1.0),
+                graphics::WHITE,
             );
         }
         let mesh = mesh_builder.build(ctx)?;
@@ -184,6 +219,18 @@ impl EventHandler for Game {
             ctx,
             &fps_display,
             (mint::Point2 { x: 0.0, y: 0.0 }, graphics::WHITE),
+        )?;
+        graphics::draw(
+            ctx,
+            &stable_display,
+            (
+                mint::Point2 { x: 0.0, y: 20.0 },
+                if self.stable {
+                    graphics::WHITE
+                } else {
+                    graphics::BLACK
+                },
+            ),
         )?;
         graphics::present(ctx)
     }
