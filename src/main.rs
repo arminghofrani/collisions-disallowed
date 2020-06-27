@@ -50,17 +50,9 @@ fn main() {
     }
 }
 
-struct SpeedVars {
-    down_factor: f32,
-    down_counter: f32,
-    down_goal: f32,
-    waiting_factor: f32,
-}
-
 struct Game {
     positions: Vec<mint::Point2<f32>>,
     velocities: Vec<mint::Vector2<f32>>,
-    speed_vars: SpeedVars,
 }
 
 impl Game {
@@ -71,13 +63,6 @@ impl Game {
             vec![mint::Point2 { x: 0.0, y: 0.0 }; n_circles];
         let mut init_velocities: Vec<mint::Vector2<f32>> =
             vec![mint::Vector2 { x: 0.0, y: 0.0 }; n_circles];
-
-        let init_speed_vars = SpeedVars {
-            down_factor: 1.0,
-            down_counter: 1.0,
-            down_goal: 1.0,
-            waiting_factor: 1.0,
-        };
 
         for i in 0..n_circles {
             let angle = rng.gen::<f32>() * 2.0 * std::f32::consts::PI;
@@ -103,59 +88,45 @@ impl Game {
         Game {
             positions: init_positions,
             velocities: init_velocities,
-            speed_vars: init_speed_vars,
         }
     }
 }
 
 impl EventHandler for Game {
     fn update(&mut self, ctx: &mut Context) -> GameResult<()> {
-        if self.speed_vars.waiting_factor != self.speed_vars.down_goal {
-            self.speed_vars.waiting_factor +=
-                self.speed_vars.down_goal - self.speed_vars.waiting_factor;
-        }
+        let attraction_force = 0.05;
+        let center = mint::Point2 {
+            x: WINDOW_WIDTH * 0.5,
+            y: WINDOW_HEIGHT * 0.5,
+        };
 
-        if self.speed_vars.down_counter == 0.0 {
-            let attraction_force = 0.05;
-            let center = mint::Point2 {
-                x: WINDOW_WIDTH * 0.5,
-                y: WINDOW_HEIGHT * 0.5,
-            };
+        for i in 0..self.positions.len() {
+            let to_center = subtract_points(center, self.positions[i]);
+            self.velocities[i] = add_vector(
+                self.velocities[i],
+                scale_vector(to_center, attraction_force),
+            );
 
-            for i in 0..self.positions.len() {
-                let to_center = subtract_points(center, self.positions[i]);
-                self.velocities[i] = add_vector(
-                    self.velocities[i],
-                    scale_vector(to_center, attraction_force),
-                );
+            for j in (i + 1)..self.positions.len() {
+                let to_collider_dist = dist_points(self.positions[i], self.positions[j]);
 
-                for j in (i + 1)..self.positions.len() {
-                    let to_collider_dist = dist_points(self.positions[i], self.positions[j]);
+                let min_dist = 40.0;
+                if to_collider_dist < min_dist {
+                    let collision = scale_vector(
+                        subtract_points(self.positions[i], self.positions[j]),
+                        1.0 / to_collider_dist,
+                    );
 
-                    let min_dist = 40.0;
-                    if to_collider_dist < min_dist {
-                        let collision = scale_vector(
-                            subtract_points(self.positions[i], self.positions[j]),
-                            1.0 / to_collider_dist,
-                        );
-
-                        self.positions[i] = add_to_point(
-                            self.positions[i],
-                            scale_vector(collision, 0.5 * (min_dist - to_collider_dist)),
-                        );
-                        self.positions[j] = add_to_point(
-                            self.positions[j],
-                            scale_vector(collision, -0.5 * (min_dist - to_collider_dist)),
-                        );
-                    }
+                    self.positions[i] = add_to_point(
+                        self.positions[i],
+                        scale_vector(collision, 0.5 * (min_dist - to_collider_dist)),
+                    );
+                    self.positions[j] = add_to_point(
+                        self.positions[j],
+                        scale_vector(collision, -0.5 * (min_dist - to_collider_dist)),
+                    );
                 }
             }
-
-            if self.speed_vars.waiting_factor != 0.0 {
-                self.speed_vars.down_factor = self.speed_vars.waiting_factor;
-            }
-
-            self.speed_vars.down_counter = self.speed_vars.down_factor;
         }
 
         for i in 0..self.positions.len() {
@@ -163,12 +134,11 @@ impl EventHandler for Game {
                 self.positions[i],
                 scale_vector(
                     self.velocities[i],
-                    timer::delta(ctx).as_secs_f32() / self.speed_vars.down_factor,
+                    timer::delta(ctx).as_secs_f32(),
                 ),
             );
         }
 
-        self.speed_vars.down_counter -= 1.0;
         Ok(())
     }
 
