@@ -10,11 +10,12 @@ extern crate text_io;
 
 const WINDOW_WIDTH: f32 = 1200.0;
 const WINDOW_HEIGHT: f32 = 900.0;
+const STABLE_THRESHOLD: u32 = 500;
 
 fn main() {
     let mut n_circles: i32 = 0;
     while n_circles < 1 {
-        println!("Number of circles (>=1, try 25):");
+        println!("Number of circles (>=1, try 10):");
         n_circles = read!();
     }
 
@@ -26,7 +27,7 @@ fn main() {
 
     let mut max_velocity: i32 = 0;
     while max_velocity < 1 {
-        println!("Maximum velocity (>=1, try 250):");
+        println!("Maximum initial velocity (>=1, try 250):");
         max_velocity = read!();
     }
 
@@ -78,13 +79,19 @@ fn main() {
 }
 
 struct Game {
+    // Positions of circles
     positions: Vec<mint::Point2<f32>>,
+    // Velocity vectors of circles
     velocities: Vec<mint::Vector2<f32>>,
+    // Radii of circles
     radii: Vec<f32>,
+    // Number of frames since last collision for each circle
     cleans: Vec<u32>,
+    // Circles that have had no collisions for STABLE_THRESHOLD frames
     stables: Vec<bool>,
+    // Number of circles that are stable
     n_stables: u32,
-    stable: bool,
+    // Attraction factor of circles to center
     attraction_factor: f32,
 }
 
@@ -106,6 +113,7 @@ impl Game {
         let cleans: Vec<u32> = vec![0; n_circles];
         let stables: Vec<bool> = vec![false; n_circles];
 
+        // Initialise random positions, velocities and radii
         for i in 0..n_circles {
             init_positions[i] = mint::Point2 {
                 x: rng.gen::<f32>() * WINDOW_WIDTH,
@@ -119,6 +127,8 @@ impl Game {
                     * rng.gen::<f32>()
                     * max_velocity,
             };
+
+            // Ensure radii are greater than 5 pixels for visibility
             radii[i] = rng.gen::<f32>() * (max_radius - 5.0) + 5.0;
         }
 
@@ -129,7 +139,6 @@ impl Game {
             cleans: cleans,
             stables: stables,
             n_stables: 0,
-            stable: false,
             attraction_factor: attraction_factor,
         }
     }
@@ -142,37 +151,46 @@ impl EventHandler for Game {
             y: WINDOW_HEIGHT * 0.5,
         };
 
-        self.stable = true;
         for i in 0..self.positions.len() {
+            // Vector from circle_i to center
             let to_center = subtract_points(center, self.positions[i]);
+
+            // velocity_i += to_center * attraction_factor,
+            // where 'velocity_i' and 'to_center' are vectors
             self.velocities[i] = add_vector(
                 self.velocities[i],
                 scale_vector(to_center, self.attraction_factor),
             );
 
+            // Tracks whether circle_i stays free of collisions
             let mut clean = true;
+            // Check circle_i for collisions with other circles
             for j in (i + 1)..self.positions.len() {
+                // Distance to other circle being checked
                 let to_collider_dist = dist_points(self.positions[i], self.positions[j]);
 
                 let min_dist = self.radii[i] + self.radii[j];
                 if to_collider_dist < min_dist {
+                    // collision = (position_i - position_j) / to_collider_dist,
+                    // where 'collision' is a vector
                     let collision = scale_vector(
                         subtract_points(self.positions[i], self.positions[j]),
                         1.0 / to_collider_dist,
                     );
 
+                    let collision_diff = min_dist - to_collider_dist;
+                    // position_i += collision * 0.5 * collision_diff,
+                    // where 'collision' is a vector
                     self.positions[i] = add_to_point(
                         self.positions[i],
-                        scale_vector(collision, 0.5 * (min_dist - to_collider_dist)),
+                        scale_vector(collision, 0.5 * collision_diff),
                     );
                     self.positions[j] = add_to_point(
                         self.positions[j],
-                        scale_vector(collision, -0.5 * (min_dist - to_collider_dist)),
+                        scale_vector(collision, -0.5 * collision_diff),
                     );
 
                     clean = false;
-                    self.stable = false;
-
                     self.cleans[j] = 0;
                     self.stables[j] = false;
                 }
@@ -180,10 +198,9 @@ impl EventHandler for Game {
 
             if clean {
                 if !self.stables[i] {
-                    self.stable = false;
                     self.cleans[i] += 1;
 
-                    if self.cleans[i] >= 600 {
+                    if self.cleans[i] >= STABLE_THRESHOLD {
                         self.stables[i] = true;
                     }
                 }
@@ -193,6 +210,7 @@ impl EventHandler for Game {
             }
         }
 
+        // Update circle positions and stable count
         self.n_stables = 0;
         for i in 0..self.positions.len() {
             self.positions[i] = add_to_point(
@@ -229,13 +247,6 @@ impl EventHandler for Game {
                 } else {
                     graphics::Color::new(1.0, 0.0, 0.0, 1.0)
                 },
-            );
-            mesh_builder.circle(
-                graphics::DrawMode::stroke(3.0),
-                self.positions[i],
-                self.radii[i],
-                0.1,
-                graphics::WHITE,
             );
         }
         let mesh = mesh_builder.build(ctx)?;
