@@ -24,6 +24,12 @@ fn main() {
         max_radius = read!();
     }
 
+    let mut max_velocity: i32 = 0;
+    while max_velocity < 1 {
+        println!("Maximum velocity (at least 1):");
+        max_velocity = read!();
+    }
+
     let window_setup = WindowSetup {
         title: "collisions-disallowed".to_owned(),
         samples: NumSamples::Zero,
@@ -51,7 +57,12 @@ fn main() {
         .build()
         .expect("Could not create ggez context");
 
-    let mut game = Game::new(&mut ctx, n_circles as usize, max_radius);
+    let mut game = Game::new(
+        &mut ctx,
+        n_circles as usize,
+        max_radius as f32,
+        max_velocity as f32,
+    );
 
     match event::run(&mut ctx, &mut event_loop, &mut game) {
         Ok(_) => println!("Exited cleanly."),
@@ -70,7 +81,7 @@ struct Game {
 }
 
 impl Game {
-    pub fn new(_ctx: &mut Context, n_circles: usize, max_radius: i32) -> Game {
+    pub fn new(_ctx: &mut Context, n_circles: usize, max_radius: f32, max_velocity: f32) -> Game {
         let mut rng = rand::thread_rng();
 
         let mut init_positions: Vec<mint::Point2<f32>> =
@@ -82,24 +93,19 @@ impl Game {
         let stables: Vec<bool> = vec![false; n_circles];
 
         for i in 0..n_circles {
-            let angle = rng.gen::<f32>() * 2.0 * std::f32::consts::PI;
-            let radius = WINDOW_HEIGHT * 0.5;
-
-            let init_x = radius * angle.cos();
-            let init_y = radius * angle.sin();
-
-            let velocity = (if rng.gen::<i32>() % 2 == 0 { 1.0 } else { -1.0 })
-                * ((rng.gen::<i32>() % 20 + 150) as f32);
-
             init_positions[i] = mint::Point2 {
-                x: init_x + WINDOW_WIDTH * 0.5,
-                y: init_y + WINDOW_HEIGHT * 0.5,
+                x: rng.gen::<f32>() * WINDOW_WIDTH,
+                y: rng.gen::<f32>() * WINDOW_HEIGHT,
             };
             init_velocities[i] = mint::Vector2 {
-                x: -1.0 * angle.sin() * velocity,
-                y: angle.cos() * velocity,
+                x: (if rng.gen::<i32>() % 2 == 0 { -1.0 } else { 1.0 })
+                    * rng.gen::<f32>()
+                    * max_velocity,
+                y: (if rng.gen::<i32>() % 2 == 0 { -1.0 } else { 1.0 })
+                    * rng.gen::<f32>()
+                    * max_velocity,
             };
-            radii[i] = rng.gen::<f32>() * (max_radius as f32 - 5.0) + 5.0;
+            radii[i] = rng.gen::<f32>() * (max_radius - 5.0) + 5.0;
         }
 
         Game {
