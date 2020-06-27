@@ -65,6 +65,7 @@ struct Game {
     radii: Vec<f32>,
     cleans: Vec<u32>,
     stables: Vec<bool>,
+    n_stables: u32,
     stable: bool,
 }
 
@@ -107,6 +108,7 @@ impl Game {
             radii: radii,
             cleans: cleans,
             stables: stables,
+            n_stables: 0,
             stable: false,
         }
     }
@@ -171,11 +173,16 @@ impl EventHandler for Game {
             }
         }
 
+        self.n_stables = 0;
         for i in 0..self.positions.len() {
             self.positions[i] = add_to_point(
                 self.positions[i],
                 scale_vector(self.velocities[i], timer::delta(ctx).as_secs_f32()),
             );
+
+            if self.stables[i] {
+                self.n_stables += 1;
+            }
         }
 
         Ok(())
@@ -184,7 +191,11 @@ impl EventHandler for Game {
     fn draw(&mut self, ctx: &mut Context) -> GameResult<()> {
         let fps = timer::fps(ctx);
         let fps_display = graphics::Text::new(format!("FPS: {:.2}", fps));
-        let stable_display = graphics::Text::new("STABLE");
+        let stable_display = graphics::Text::new(format!(
+            "STABLE: {}/{}",
+            self.n_stables,
+            self.positions.len()
+        ));
 
         let mut mesh_builder = graphics::MeshBuilder::new();
         for i in 0..self.positions.len() {
@@ -223,14 +234,7 @@ impl EventHandler for Game {
         graphics::draw(
             ctx,
             &stable_display,
-            (
-                mint::Point2 { x: 0.0, y: 20.0 },
-                if self.stable {
-                    graphics::WHITE
-                } else {
-                    graphics::BLACK
-                },
-            ),
+            (mint::Point2 { x: 0.0, y: 16.0 }, graphics::WHITE),
         )?;
         graphics::present(ctx)
     }
