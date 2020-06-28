@@ -213,6 +213,8 @@ impl EventHandler for Game {
         // Update circle positions and stable count
         self.n_stables = 0;
         for i in 0..self.positions.len() {
+            // position_i += velocity_i * frame_delta,
+            // where 'velocity_i' is a vector
             self.positions[i] = add_to_point(
                 self.positions[i],
                 scale_vector(self.velocities[i], timer::delta(ctx).as_secs_f32()),

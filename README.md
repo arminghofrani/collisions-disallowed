@@ -6,11 +6,11 @@ This is a cool trajectory finder, rewritten in Rust from [johnBuffer/NoCol](http
 
 ## Demo
 
-![Demo](https://github.com/arminghofrani/collisions-disallowed/blob/master/demo/demo_fast.gif)
+![Fast demo](https://github.com/arminghofrani/collisions-disallowed/blob/master/demo/fast.gif)
 
 *Parameters: n_circles = 10, max_radius = 40, max_velocity = 250, attraction_factor = 0.05, (sped up)*
 
-![Demo](https://github.com/arminghofrani/collisions-disallowed/blob/master/demo/demo_slow.gif)
+![Slow demo](https://github.com/arminghofrani/collisions-disallowed/blob/master/demo/slow.gif)
 
 *Parameters: n_circles = 25, max_radius = 40, max_velocity = 250, attraction_factor = 0.05, (slowed down, zoomed in)*
 
@@ -34,4 +34,4 @@ export WINIT_UNIX_BACKEND=x11
 Some notes:
 
 * The circles are attracted to the center, not to each other.
-* The sizes of the circles don't affect their orbital period.
+* The size of a circle doesn't affect its orbital period.
