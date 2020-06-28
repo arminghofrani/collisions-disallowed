@@ -4,9 +4,15 @@
 
 This is a cool trajectory finder, rewritten in Rust from [johnBuffer/NoCol](https://github.com/johnBuffer/NoCol). The program randomly initialises the position and velocity vectors of circles, according to parameters you specify. The circles are all attracted to the center. Through colliding with each other, they eventually find 'stable' orbits without collisions.
 
-![Demo](https://github.com/arminghofrani/collisions-disallowed/blob/master/demo/demo.gif)
+## Demo
 
-*Parameters: n_circles = 10, max_radius = 40, max_velocity = 250, attraction_factor = 0.05*
+![Demo](https://github.com/arminghofrani/collisions-disallowed/blob/master/demo/demo_fast.gif)
+
+*Parameters: n_circles = 10, max_radius = 40, max_velocity = 250, attraction_factor = 0.05, (sped up)*
+
+![Demo](https://github.com/arminghofrani/collisions-disallowed/blob/master/demo/demo_slow.gif)
+
+*Parameters: n_circles = 25, max_radius = 40, max_velocity = 250, attraction_factor = 0.05, (slowed down, zoomed in)*
 
 ## Compilation
 
