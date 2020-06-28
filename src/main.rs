@@ -190,9 +190,12 @@ impl EventHandler for Game {
                         scale_vector(collision, -0.5 * collision_diff),
                     );
 
-                    clean = false;
-                    self.cleans[j] = 0;
-                    self.stables[j] = false;
+                    // One pixel tolerance for resetting stability values
+                    if collision_diff >= 1.0 {
+                        clean = false;
+                        self.cleans[j] = 0;
+                        self.stables[j] = false;
+                    }
                 }
             }
 
